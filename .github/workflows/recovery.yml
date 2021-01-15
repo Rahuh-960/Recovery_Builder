@@ -1,16 +1,32 @@
 name: Building recovery
+on: 
+  workflow_dispatch:
+   inputs:
+      device: 
+        description: 'Device Codename'
+        required: true
+        default: 'paste your device codename here'
+      
+      dt:
+        description: 'Device Tree'
+        required: true
+        default: 'paste your device tree github link here'
+      
+      brand:
+        description: 'Device Brand'
+        required: true
+        default: 'paste your device Brandname here'
 
-on:
-  watch:
-    types: workflow dispatched
+      source: 
+        description: 'Recovery Source'
+        required: true
+        default: 'paste your recovery Source github link here'  
 
 env:
-  MANIFEST: git://github.com/SKYHAWK-Recovery-Project/platform_manifest_twrp_omni.git -b android-9.0
-  DEVICE: rosy
-  DT_LINK: https://github.com/JamieHoSzeYui/android_recovery_xiaomi_rosy
-  DT_PATH: device/xiaomi/rosy
-  KERNEL_LINK: https://github.com/Pulkit077/kernel_xiaomi_rosy
-  KERNEL_PATH: kernel/xiaomi/rosy
+  MANIFEST: ${{ github.event.inputs.source }}
+  DEVICE: ${{ github.event.inputs.device }}
+  DT_LINK: ${{ github.event.inputs.dt }}
+  DT_PATH: device/${{ github.event.inputs.brand }}/${{ github.event.inputs.device }}
   TARGET: recoveryimage
   TZ: Asia/Kolkata
 
@@ -43,19 +59,25 @@ jobs:
              repo init -u $MANIFEST --depth=1 --groups=all,-notdefault,-device,-darwin,-x86,-mips
              repo sync -j4
              git clone $DT_LINK --depth=1 --single-branch $DT_PATH
-             git clone $KERNEL_LINK --depth=1 --single-branch $KERNEL_PATH
              
        - name: Build
          run: |
               cd work
-              . build/envsetup.sh &&lunch omni_$DEVICE-eng &&export ALLOW_MISSING_DEPENDENCIES=true && mka $TARGET
-             
-       - uses: actions/upload-artifact@v2
-         with:
-          name: recoveryzip
-          path: work/out/target/product/*/*.zip
+              . build/envsetup.sh &&lunch omni_$DEVICE-eng
+              export ALLOW_MISSING_DEPENDENCIES=true
+              export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
+              export LC_ALL="C"
+              export OF_MAINTAINER="Samyak , Ryukendo9"
+              export FOX_VERSION="Unofficial"
+              lunch omni_$Device-eng
+              mka recoveryimage
+              
+       - name: Uploading using Bash Upload
+         run: |
+              cd
+              mv OrangeFox/out/target/product/wayne/OrangeFox-Unofficial-wayne.img ~
+              mv OrangeFox/out/target/product/wayne/OrangeFox-Unofficial-wayne.zip ~
+              curl https://bashupload.com/Ofox-Unofficial.zip --data-binary @OrangeFox-Unofficial-wayne.zip
+              curl https://bashupload.com/Ofox-Unofficial.img --data-binary @OrangeFox-Unofficial-wayne.img
 
-       - uses: actions/upload-artifact@v2
-         with:
-          name: recoveryimage
-          path: work/out/target/product/*/*.img
+
