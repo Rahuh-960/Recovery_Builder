@@ -48,26 +48,33 @@ jobs:
             sudo -E apt-get -y purge azure-cli ghc* zulu* hhvm llvm* firefox google* dotnet* powershell openjdk* mysql* php* 
             sudo -E apt-get clean 
             sudo -E apt-get -qq update
-            sudo -E apt-get -qq install bc build-essential zip curl libstdc++6 git wget python gcc clang libssl-dev repo rsync flex curl  bison aria2
-            sudo curl --create-dirs -L -o /usr/local/bin/repo -O -L https://storage.googleapis.com/git-repo-downloads/repo
-            sudo chmod a+rx /usr/local/bin/repo
+            bash
+            cd
+            mkdir bin 
+            cd bin 
+            curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+            chmod +x repo
+            git clone https://github.com/akhilnarang/scripts.git scripts
+            bash bin/scripts/setup/android_build_env.sh
+            bash bin/scripts/setup/install_android_sdk.sh 
             
        - name: Sync recovery source and device tree
          run: |
-             bash
              cd
              mkdir OrangeFox
              cd OrangeFox
              repo init -u $MANIFEST --depth=1 --groups=all,-notdefault,-device,-darwin,-x86,-mips
              repo sync -j4
-             git clone $DT_LINK --depth=1 --single-branch $DT_PATH
+             cd 
+             cd OrangeFox
+             git clone $DT_LINK --depth=1 $DT_PATH
  
              
        - name: Build
          run: |
               cd 
               cd OrangeFox
-              . build/envsetup.sh
+              source build/envsetup.sh
               export ALLOW_MISSING_DEPENDENCIES=true
               export FOX_USE_TWRP_RECOVERY_IMAGE_BUILDER=1
               export LC_ALL="C"
